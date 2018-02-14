@@ -75,13 +75,14 @@ public class Q3 {
 		int dbe = Character.getNumericValue(db);
 		int dce = Character.getNumericValue(dc);
 		
+		System.out.println(dae + "^3 + "+ dbe + "^3 + " + dce + "^3 = "+ (Math.pow(dae, 3) + Math.pow(dbe, 3) + Math.pow(dce, 3)));
 		if ((Math.pow(dae, 3) + Math.pow(dbe, 3) + Math.pow(dce, 3)) == Integer.valueOf(entry)) {
 			System.out.println(entry + " is an Armstrong number");
 		}
-			else
-				System.out.println(dae + "^3 + "+ dbe + "^3 + " + dce + "^3 = "+ (Math.pow(dae, 3) + Math.pow(dbe, 3) + Math.pow(dce, 3)));
-				System.out.println(entry + " is not an Armstrong number");
-		
+		else {
+			System.out.println(entry + " is not an Armstrong number");
+		}
+		//end of q3d
 		
 		
 		
