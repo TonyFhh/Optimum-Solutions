@@ -4,7 +4,7 @@ public class MaxValue {
 
 	void mainseq(int max) {
 		// TODO Auto-generated method stub
-		int fib[] = new int[max*2]; //since java doesn't support dynamic array, we just use a random value that can cover the lower ranges, less than ideal for high values though;
+		int fib[] = new int[1+max*2]; //since java doesn't support dynamic array, we just use a random value that can cover the lower ranges, less than ideal for high values though;
 		
 		fib[0] = 0;
 		if (max >= 1) {
