@@ -41,13 +41,14 @@ public class Fibonacci {
 				System.out.println("Enter sequence length:");
 				try {
 					value = sc.nextInt(); //check if it is number..
-					LengthLogic lmain = new LengthLogic();
-					lmain.mainseq(value); //run main seq
-					if(!again()) {
-						System.out.println("Thanks for using Fiboacci Number Display!");
-						break While;
-					}
-					
+					if (value != 0) {
+						LengthLogic lmain = new LengthLogic();
+						lmain.mainseq(value); //run main seq
+						if(!again()) {
+							System.out.println("Thanks for using Fiboacci Number Display!");
+							break While;
+						}
+					}	
 				} catch (InputMismatchException ex) { //if not then..
 					System.out.println("Invalid input, try again");
 					//System.out.println("Please select one of the 2 options to displaye");
