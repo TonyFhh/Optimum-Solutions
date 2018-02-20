@@ -18,7 +18,7 @@ public class MaxValue {
 		
 		System.out.print("{ ");
 		for (int i = 0; i < fib.length; i++) {
-			if (fib[i] >= max) break;
+			if (fib[i] > max) break; //if the new number to put exceeds the max value stop printing
 			System.out.print(fib[i] + " ");
 			
 		}
