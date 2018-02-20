@@ -49,7 +49,7 @@ public class Fibonacci {
 							break While;
 						}
 					}	
-				} catch (InputMismatchException ex) { //if not then..
+				} catch (NegativeArraySizeException|InputMismatchException ex) { //if not then..
 					System.out.println("Invalid input, try again");
 					//System.out.println("Please select one of the 2 options to displaye");
 				}
@@ -65,7 +65,7 @@ public class Fibonacci {
 						break While;
 					}
 					
-				} catch (InputMismatchException ex) {
+				} catch (NegativeArraySizeException|InputMismatchException ex) {
 					System.out.println("Invalid input, try again.");
 					//System.out.println("Please select one of the 2 options to displaye");
 					
