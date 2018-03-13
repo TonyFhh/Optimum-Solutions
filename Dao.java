@@ -1,0 +1,343 @@
+package com.optimum.dao;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.text.ParseException;
+import java.util.List;
+import java.util.Scanner;
+
+import com.optimum.connection.Connect;
+import com.optimum.controller.RegVerifiers;
+import com.optimum.pojo.UserPojo;
+
+/** This class will feature loginAuth for sql query
+ * */
+
+public class Dao {
+	
+	private boolean status;
+	public Connect connect;
+	public Connection con;
+	private PreparedStatement st;
+	ResultSet rs;
+	
+	public Dao () throws ClassNotFoundException, SQLException {
+		connect = Connect.getConnectObj();
+		con = connect.init();
+	}
+	
+	public String getName(UserPojo refUPojo) throws SQLException {
+		
+		String name = null;
+		String sql = ("SELECT Name from a4db where Email=?;"); //input the sql query
+		st = con.prepareStatement(sql);
+		st.setString(1, refUPojo.getUser());
+		rs = st.executeQuery(); //execute the string into the sql server
+		
+		  //if entry found
+		if (rs.next()) {
+			name = rs.getString("Name");
+		}			
+		
+		return name;
+	}
+	
+	public String getPW(UserPojo refUPojo) throws SQLException {
+		
+		String pw = null;
+		String sql = ("SELECT Password from a4db where Email=?;"); //input the sql query
+		st = con.prepareStatement(sql);
+		st.setString(1, refUPojo.getUser());
+		rs = st.executeQuery(); //execute the string into the sql server
+		
+		  //if entry found 
+		if (rs.next()) {
+			pw = rs.getString("Password");
+		}
+		
+		return pw;
+	}
+	
+	public boolean checkPW(UserPojo refUPojo) throws SQLException {
+//		Class.forName("com.mysql.jdbc.Driver"); //create an object for the database class?
+//		Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/batch5","root","root"); //connect to the mysql server database (url,user,pw)
+//		Statement st = connect.con.createStatement(); 
+		String pw = refUPojo.getPassword();
+		
+		try {
+			String sql = ("SELECT Password from a4db where Email=?;"); //input the sql query
+			st = con.prepareStatement(sql);
+			st.setString(1, refUPojo.getUser());
+			rs = st.executeQuery(); //execute the string into the sql server
+			
+			if (rs.next()) { //if entry found 
+				String dbpw = rs.getString("Password");
+				if (pw.equals(dbpw)) {
+					status = true;
+				} else {
+					status = false;
+				}
+				
+			} else {
+				status = false;
+				
+				
+			}
+		} catch (SQLException e) {
+			status = false;
+		}
+		
+				
+		
+		return status;
+	}
+	
+	//still not incrementing no of attempts yet
+	public void failLock (UserPojo refUPojo) throws SQLException {
+		String sql = ("SELECT Password from a4db where Email=?;"); //input the sql query
+		st = con.prepareStatement(sql);
+		st.setString(1, refUPojo.getUser());
+		if (!isadmin(refUPojo)) {
+			sql = ("SELECT No_of_Attempts from a4db where Email =?;");
+			st = con.prepareStatement(sql);
+			st.setString(1, refUPojo.getUser());
+			rs = st.executeQuery(); //execute the string into the sql server
+			int attempts = Integer.parseInt(rs.getString("No_of_Attempts"));
+			attempts++;
+			sql = ("UPDATE a4db SET No_of_Attempts =? where Email = ?;");
+			st = con.prepareStatement(sql);
+			st.setInt(1, attempts);
+			st.setString(2, refUPojo.getUser());
+			st.executeUpdate(); //execute the string into the sql server
+			if (attempts >= 3) {
+				sql = ("UPDATE a4db SET Status = ? where Email = ?;");
+				st = con.prepareStatement(sql);
+				st.setString(1, "lock");
+				st.setString(2, refUPojo.getUser());
+				st.executeUpdate(); //execute the string into the sql server
+			}
+		}
+	}
+	
+	public boolean checkUser (UserPojo refUPojo) throws ClassNotFoundException, SQLException {
+		
+//		Class.forName("com.mysql.jdbc.Driver"); //create an object for the database class?
+//		Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/batch5","root","root"); //connect to the mysql server database (url,user,pw)
+		
+//		Statement st = con.createStatement(); 
+		String sql = ("SELECT Email from a4db where Email =?;"); //input the sql query
+		st = con.prepareStatement(sql);
+		st.setString(1, refUPojo.getUser());
+		rs = st.executeQuery(); //execute the string into the sql server
+		
+		if (rs.next()) { //if entry found 
+			status = true;
+		} else {
+			status = false;
+		}
+				
+//		con.close();
+		
+		return status;
+	}
+	
+	//need to test
+	public boolean triggerlock (UserPojo refUPojo, String userid) throws SQLException {
+		
+		System.out.println("Changing account status for userid " + userid + "...");
+		String sql = ("SELECT Email, Role, Status from a4db where Serial_No = ?;");
+		st = con.prepareStatement(sql);
+		st.setString(1, userid);
+		rs = st.executeQuery(); //execute the string into the sql server
+		if (rs.next()) {			
+			String accstatus = rs.getString("Status");
+			String role = rs.getString("Role");
+			String email = rs.getString("Email");
+			
+			if (role.toLowerCase().equals("user")) { //if is user account
+				if (accstatus.toLowerCase().equals("unlock")) {
+					sql = ("UPDATE a4db SET Status =? where Serial_No = ?;");
+					st = con.prepareStatement(sql);
+					st.setString(1, "lock");
+					st.setString(2, userid);
+					st.executeUpdate(); //execute the string into the sql server
+					System.out.println("account user " + email + " now locked.");
+					status = true;
+				} else {
+					sql = ("UPDATE a4db SET Status =? where Serial_No = ?;");
+					st = con.prepareStatement(sql);
+					st.setString(1, "unlock");
+					st.setString(2, userid);
+					st.executeUpdate(); //execute the string into the sql server
+					System.out.println("account user " + email + " now unlocked.");
+					status = true;
+					
+				}
+				
+			} else { //if is admin account
+				System.out.println("Unable to change status of admin accounts. Try another Serial No.");
+			} 
+		} else { // if no results returned
+			System.out.println("Invalid Userid. Verify user Serial No. and try again.");
+			status = false;
+		}
+			
+			
+			
+		return status;	
+	}
+	
+	
+	//method for getting variable on login status that will provide access for 1st and sub
+	
+	public boolean isfirstlogin (UserPojo refUPojo) throws SQLException {
+		
+		String sql = ("SELECT First_Login from a4db where Email = ?;"); //input the sql query
+		st = con.prepareStatement(sql);
+		st.setString(1, refUPojo.getUser());
+		rs = st.executeQuery(); //execute the string into the sql server
+		
+		if (rs.next()) { //if entry found
+			String priorlogin = rs.getString("First_Login");
+			if (priorlogin.toLowerCase().equals("true")) {
+				status = true;
+			} else
+				status = false;			
+		} 
+		return status;	
+	}
+	
+	public boolean islocked (UserPojo refUPojo) throws SQLException {
+		
+		String sql = ("SELECT Status from a4db where Email = ?;"); //input the sql query
+		st = con.prepareStatement(sql);
+		st.setString(1, refUPojo.getUser());
+		rs = st.executeQuery(); //execute the string into the sql server
+		
+		if (rs.next()) { //if entry found
+			String key = rs.getString("Status");
+			if (key.toLowerCase().equals("lock")) {
+				status = true;
+			} else
+				status = false;			
+		} 
+		return status;		
+//		con.close();
+	}
+	
+	public boolean isadmin (UserPojo refUPojo) throws SQLException {
+			
+			String sql = ("SELECT Role from a4db where Email = ?;"); //input the sql query
+			st = con.prepareStatement(sql);
+			st.setString(1, refUPojo.getUser());
+			rs = st.executeQuery(); //execute the string into the sql server
+			
+			if (rs.next()) { //if entry found
+				String user = rs.getString("Role");
+				System.out.println("debug: isadmin() user = " + user);
+				if (user.toLowerCase().equals("admin")) {
+					status = true;
+				} else
+					status = false;			
+			} 
+			return status;		
+	//		con.close();
+		}
+	
+	/* Method to update db for user pw and security Q/A. Invoked during first login and forget password selections.*/
+	public void changePwS (UserPojo refUPojo, List<String> uinput) throws SQLException {
+		System.out.println("Updating Database...");
+		
+		refUPojo.setPassword(uinput.get(0));
+		
+		String sql = ("UPDATE a4db set Password=?, Security_Question=?, Security_Answer=?, First_Login =? where User =?;"); //input the sql query
+		st = con.prepareStatement(sql);
+		st.setString(1, uinput.get(0));
+		st.setString(2, uinput.get(1));
+		st.setString(3, uinput.get(2));
+		st.setString(3, "false");
+		st.setString(5, refUPojo.getUser());
+		st.executeUpdate(); //execute the string into the sql server
+		
+			
+		System.out.println("Update Successful.");
+	}
+	
+	/* Write to db during admin registration of new users*/
+	public void dbRegister(List<String> entry) throws SQLException {
+		
+		//Generate the password, using first 4 digits of nric and last 4 digits of mobile
+		System.out.println("Generating Password...");
+		String nric = entry.get(1);
+		String mobile = entry.get(4);
+		String date = entry.get(2);
+		date = RegVerifiers.convertToSqlDate(date);
+		System.out.println("debug: Dao date: " + date);
+		StringBuilder sb = new StringBuilder();
+		for (int i = 1; i < 5; i++) {
+			sb.append(nric.charAt(i));
+		}
+		for (int i = 4; i < 8; i++) {
+			sb.append(mobile.charAt(i));
+		}
+		String pw = sb.toString();
+		System.out.println("debug: pw is " + pw);
+		
+		//Update DB
+		System.out.println("Updating Database...");
+		
+		String sql = "INSERT into a4db (Name, NRIC, Email, DoB, Mobile, Password, Role, First_Login, Status, No_of_Attempts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+		st = con.prepareStatement(sql);
+		st.setString(1, entry.get(0));
+		st.setString(2, entry.get(1));
+		st.setString(3, entry.get(2));
+		st.setString(4, date);
+		st.setInt(5, Integer.parseInt(entry.get(4)));
+		st.setString(6, pw);
+		st.setString(7, "user");
+		st.setString(8, "true");
+		st.setString(9, "unlock");
+		st.setInt(10, 0);
+		st.executeUpdate(); //execute the string into the sql server 
+		
+		System.out.println("New user "+entry.get(3)+" registered. An email containing login details has been sent to the user's email address.");
+		
+		//Send the email to email address
+		
+	}
+
+	/* Method to access db and show user list when prompted by any admin*/
+	public void getUserList() throws SQLException {
+		System.out.println("Getting data from Database...");
+		String sql = ("SELECT * from a4db WHERE Role =?;"); //input the sql query
+		st = con.prepareStatement(sql);
+		st.setString(1, "user");
+		ResultSet rs = st.executeQuery(); //execute the string into the sql server
+		
+		System.out.println("Serial No Name NRIC DoB Status No of Attempts");
+		
+		while (rs.next()) {			
+
+			String row = rs.getString("Serial_No");
+			String row1 = rs.getString("Name");
+			String row2 = rs.getString("NRIC");
+			String row3 = rs.getString("Email");
+			String row4 = rs.getString("Status");
+			String row5 = rs.getString("No_of_Attempts");
+			System.out.print(row + " ");
+			System.out.print(row1 + " ");
+			System.out.print(row2 + " ");
+			System.out.print(row3 + " ");
+			System.out.print(row4 + " ");
+			System.out.println(row5 + " ");
+			
+		}
+		System.out.println("Returning to menu...");
+		
+	}
+	
+	//method for failed 3 times lock
+}
